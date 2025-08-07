@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -518,7 +519,11 @@ func (c *Client) connect(ctx context.Context, connID int, wg *sync.WaitGroup) {
 		return
 	}
 
-	conn, _, err := c.dialer.DialContext(ctx, u.String(), nil)
+	headers := http.Header{
+		"User-Agent": []string{"ws-test-client/1.0 (Go WebSocket Test Tool)"},
+	}
+
+	conn, _, err := c.dialer.DialContext(ctx, u.String(), headers)
 	if err != nil {
 
 		if c.ui != nil {
