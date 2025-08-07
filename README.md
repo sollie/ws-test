@@ -15,7 +15,7 @@ The service identifies itself using the first available option:
 1. `POD_NAME` environment variable (set by Kubernetes)
 2. `HOSTNAME` environment variable
 3. System hostname
-4. Fallback to "unknown-server"
+4. Fallback to generated UUID (e.g., "a1b2c3d4-e5f6-4789-8abc-def012345678")
 
 ## API
 

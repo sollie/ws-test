@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -52,7 +54,22 @@ func getServerID() string {
 		return hostname
 	}
 
-	return "unknown-server"
+	// Generate UUID as fallback
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		log.Printf("Failed to generate UUID: %v", err)
+		return "fallback-server"
+	}
+
+	// Set version (4) and variant bits
+	bytes[6] = (bytes[6] & 0x0f) | 0x40
+	bytes[8] = (bytes[8] & 0x3f) | 0x80
+
+	return hex.EncodeToString(bytes[:4]) + "-" +
+		hex.EncodeToString(bytes[4:6]) + "-" +
+		hex.EncodeToString(bytes[6:8]) + "-" +
+		hex.EncodeToString(bytes[8:10]) + "-" +
+		hex.EncodeToString(bytes[10:])
 }
 
 func (s *Server) addClient(conn *websocket.Conn) {
