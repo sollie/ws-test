@@ -71,14 +71,14 @@ func getServerID() string {
 		return hostname
 	}
 
-	// Generate UUID as fallback
+	
 	bytes := make([]byte, 16)
 	if _, err := rand.Read(bytes); err != nil {
 		log.Printf("Failed to generate UUID: %v", err)
 		return "fallback-server"
 	}
 
-	// Set version (4) and variant bits
+	
 	bytes[6] = (bytes[6] & 0x0f) | 0x40
 	bytes[8] = (bytes[8] & 0x3f) | 0x80
 
@@ -131,13 +131,13 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set up ping/pong handlers
+	
 	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(s.pongTimeout))
+		conn.SetReadDeadline(time.Now().Add(s.pingInterval + s.pongTimeout))
 		return nil
 	})
 
-	// Start ping routine
+	
 	go s.pingRoutine(conn)
 
 	defer func() {
@@ -145,8 +145,8 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Client disconnected. Total clients: %d", s.getClientCount())
 	}()
 
-	// Set initial read deadline
-	conn.SetReadDeadline(time.Now().Add(s.pongTimeout))
+	
+	conn.SetReadDeadline(time.Now().Add(s.pingInterval + s.pongTimeout))
 
 	for {
 		_, _, err := conn.ReadMessage()
@@ -156,6 +156,9 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			}
 			break
 		}
+
+		
+		conn.SetReadDeadline(time.Now().Add(s.pingInterval + s.pongTimeout))
 
 		statusMsg := Message{
 			Type:      "status",
