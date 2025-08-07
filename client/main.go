@@ -25,6 +25,7 @@ type Config struct {
 	Connections int           `mapstructure:"connections"`
 	Timeout     time.Duration `mapstructure:"timeout"`
 	ReadTimeout time.Duration `mapstructure:"read-timeout"`
+	Headers     []string      `mapstructure:"headers"`
 }
 
 type Message struct {
@@ -542,6 +543,17 @@ func (c *Client) connect(ctx context.Context, connID int, wg *sync.WaitGroup) {
 		"User-Agent": []string{"ws-test-client/1.0 (Go WebSocket Test Tool)"},
 	}
 
+	for _, header := range c.config.Headers {
+		parts := strings.SplitN(header, ":", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+			if key != "" && value != "" {
+				headers.Add(key, value)
+			}
+		}
+	}
+
 	conn, _, err := c.dialer.DialContext(ctx, u.String(), headers)
 	if err != nil {
 
@@ -711,6 +723,7 @@ func initConfig() Config {
 	pflag.Int("connections", 1, "Number of concurrent connections")
 	pflag.Duration("timeout", 10*time.Second, "Connection timeout")
 	pflag.Duration("read-timeout", 60*time.Second, "Read timeout for messages")
+	pflag.StringArrayP("header", "H", []string{}, "Custom header to send (can be used multiple times, format: 'Key: Value')")
 	pflag.Parse()
 
 	viper.BindPFlags(pflag.CommandLine)
@@ -721,6 +734,7 @@ func initConfig() Config {
 	viper.SetDefault("connections", 1)
 	viper.SetDefault("timeout", 10*time.Second)
 	viper.SetDefault("read-timeout", 60*time.Second)
+	viper.SetDefault("headers", []string{})
 
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
