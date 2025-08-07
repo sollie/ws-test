@@ -67,6 +67,7 @@ Server starts on port 8080 (configurable via `PORT` environment variable).
 - `POD_NAME`: Pod name in Kubernetes (auto-detected)
 - `PING_INTERVAL`: WebSocket ping interval (default: 30s)
 - `PONG_TIMEOUT`: Pong response timeout (default: 10s)
+- `DEBUG`: Enable debug mode to log client headers (default: false)
 
 ## Running the Client
 
