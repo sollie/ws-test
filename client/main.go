@@ -183,15 +183,34 @@ func (m model) View() string {
 
 	header := m.buildHeader(width)
 
-	headerHeight := 4
-	tableHeaderHeight := 2
-	availableHeight := height - headerHeight - tableHeaderHeight - 1
+	headerContentLines := 3
+	headerBorderLines := 2
+	actualHeaderHeight := headerContentLines + headerBorderLines
+	tableHeaderHeight := 3
+	messagesPrefixHeight := 1
+	messagePaneBorderLines := 2
+	tmuxStatusBarBuffer := 2
+
+	totalReservedHeight := actualHeaderHeight + tableHeaderHeight + messagesPrefixHeight + messagePaneBorderLines + tmuxStatusBarBuffer + 1
+	availableHeight := height - totalReservedHeight
+
+	if availableHeight < 4 {
+		availableHeight = 4
+	}
 
 	tableHeight := availableHeight / 3
 	if tableHeight < 3 {
 		tableHeight = 3
 	}
-	messageHeight := availableHeight - tableHeight - 1
+
+	maxSafeMessageHeight := height - actualHeaderHeight - tableHeaderHeight - messagesPrefixHeight - messagePaneBorderLines - 3
+	messageHeight := availableHeight - tableHeight
+	if messageHeight > maxSafeMessageHeight {
+		messageHeight = maxSafeMessageHeight
+	}
+	if messageHeight < 1 {
+		messageHeight = 1
+	}
 	var visibleMessages []string
 	totalMessages := len(m.logMessages)
 	startIdx := 0
