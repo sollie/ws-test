@@ -1,4 +1,4 @@
-module ws-test-service
+module ws-server
 
 go 1.21
 
