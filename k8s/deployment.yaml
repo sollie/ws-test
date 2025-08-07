@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ws-test-service
+  name: ws-server
   labels:
-    app: ws-test-service
+    app: ws-server
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: ws-test-service
+      app: ws-server
   template:
     metadata:
       labels:
-        app: ws-test-service
+        app: ws-server
     spec:
       containers:
-      - name: ws-test-service
-        image: ws-test-service:latest
+      - name: ws-server
+        image: ws-server:latest
         ports:
         - containerPort: 8080
         env:

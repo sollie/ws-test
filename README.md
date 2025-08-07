@@ -44,6 +44,7 @@ Returns current server status:
 ## Running Locally
 
 ```bash
+cd server
 go run main.go
 ```
 
@@ -53,8 +54,8 @@ Server starts on port 8080 (configurable via `PORT` environment variable).
 
 Build and run:
 ```bash
-docker build -t ws-test-service .
-docker run -p 8080:8080 ws-test-service
+docker build -t ws-server .
+docker run -p 8080:8080 ws-server
 ```
 
 ## Kubernetes Deployment
