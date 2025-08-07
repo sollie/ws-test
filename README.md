@@ -35,7 +35,7 @@ Returns current server status:
 ```json
 {
   "type": "status",
-  "server_id": "pod-name-12345", 
+  "server_id": "pod-name-12345",
   "timestamp": "2025-08-07T10:30:00Z",
   "clients": 3
 }
@@ -78,4 +78,4 @@ curl http://localhost:8080/
 
 # WebSocket test (requires wscat or similar)
 wscat -c ws://localhost:8080/ws
-```# ws-test
+```
