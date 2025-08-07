@@ -20,6 +20,7 @@ type Server struct {
 	serverID     string
 	pingInterval time.Duration
 	pongTimeout  time.Duration
+	debugMode    bool
 }
 
 type Message struct {
@@ -46,6 +47,8 @@ func NewServer() *Server {
 		}
 	}
 
+	debugMode := os.Getenv("DEBUG") == "true"
+
 	return &Server{
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -56,6 +59,7 @@ func NewServer() *Server {
 		serverID:     serverID,
 		pingInterval: pingInterval,
 		pongTimeout:  pongTimeout,
+		debugMode:    debugMode,
 	}
 }
 func getServerID() string {
@@ -71,14 +75,12 @@ func getServerID() string {
 		return hostname
 	}
 
-	
 	bytes := make([]byte, 16)
 	if _, err := rand.Read(bytes); err != nil {
 		log.Printf("Failed to generate UUID: %v", err)
 		return "fallback-server"
 	}
 
-	
 	bytes[6] = (bytes[6] & 0x0f) | 0x40
 	bytes[8] = (bytes[8] & 0x3f) | 0x80
 
@@ -109,6 +111,15 @@ func (s *Server) getClientCount() int {
 }
 
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	if s.debugMode {
+		log.Printf("DEBUG - Client headers:")
+		for name, values := range r.Header {
+			for _, value := range values {
+				log.Printf("DEBUG - %s: %s", name, value)
+			}
+		}
+	}
+
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade failed: %v", err)
@@ -131,13 +142,11 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
 	conn.SetPongHandler(func(string) error {
 		conn.SetReadDeadline(time.Now().Add(s.pingInterval + s.pongTimeout))
 		return nil
 	})
 
-	
 	go s.pingRoutine(conn)
 
 	defer func() {
@@ -145,7 +154,6 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Client disconnected. Total clients: %d", s.getClientCount())
 	}()
 
-	
 	conn.SetReadDeadline(time.Now().Add(s.pingInterval + s.pongTimeout))
 
 	for {
@@ -157,7 +165,6 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		
 		conn.SetReadDeadline(time.Now().Add(s.pingInterval + s.pongTimeout))
 
 		statusMsg := Message{
@@ -217,6 +224,9 @@ func main() {
 	log.Printf("Server %s starting on port %s", server.serverID, port)
 	log.Printf("WebSocket endpoint: /ws")
 	log.Printf("Status endpoint: /")
+	if server.debugMode {
+		log.Printf("DEBUG MODE ENABLED - Client headers will be logged")
+	}
 
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("Server failed to start:", err)
