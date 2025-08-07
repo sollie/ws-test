@@ -18,6 +18,8 @@ type Server struct {
 	clients      map[*websocket.Conn]bool
 	clientsMutex sync.RWMutex
 	serverID     string
+	pingInterval time.Duration
+	pongTimeout  time.Duration
 }
 
 type Message struct {
@@ -30,17 +32,32 @@ type Message struct {
 func NewServer() *Server {
 	serverID := getServerID()
 
+	pingInterval := 30 * time.Second
+	if envInterval := os.Getenv("PING_INTERVAL"); envInterval != "" {
+		if duration, err := time.ParseDuration(envInterval); err == nil {
+			pingInterval = duration
+		}
+	}
+
+	pongTimeout := 10 * time.Second
+	if envTimeout := os.Getenv("PONG_TIMEOUT"); envTimeout != "" {
+		if duration, err := time.ParseDuration(envTimeout); err == nil {
+			pongTimeout = duration
+		}
+	}
+
 	return &Server{
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				return true
 			},
 		},
-		clients:  make(map[*websocket.Conn]bool),
-		serverID: serverID,
+		clients:      make(map[*websocket.Conn]bool),
+		serverID:     serverID,
+		pingInterval: pingInterval,
+		pongTimeout:  pongTimeout,
 	}
 }
-
 func getServerID() string {
 	if podName := os.Getenv("POD_NAME"); podName != "" {
 		return podName
@@ -114,10 +131,22 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set up ping/pong handlers
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(s.pongTimeout))
+		return nil
+	})
+
+	// Start ping routine
+	go s.pingRoutine(conn)
+
 	defer func() {
 		s.removeClient(conn)
 		log.Printf("Client disconnected. Total clients: %d", s.getClientCount())
 	}()
+
+	// Set initial read deadline
+	conn.SetReadDeadline(time.Now().Add(s.pongTimeout))
 
 	for {
 		_, _, err := conn.ReadMessage()
@@ -138,6 +167,22 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		if err := conn.WriteJSON(statusMsg); err != nil {
 			log.Printf("Error sending status message: %v", err)
 			break
+		}
+	}
+}
+
+func (s *Server) pingRoutine(conn *websocket.Conn) {
+	ticker := time.NewTicker(s.pingInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Printf("Error sending ping: %v", err)
+				return
+			}
 		}
 	}
 }
