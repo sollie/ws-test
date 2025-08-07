@@ -25,7 +25,7 @@ type Config struct {
 	Connections int           `mapstructure:"connections"`
 	Timeout     time.Duration `mapstructure:"timeout"`
 	ReadTimeout time.Duration `mapstructure:"read-timeout"`
-	Headers     []string      `mapstructure:"headers"`
+	Headers     []string      `mapstructure:"header"`
 }
 
 type Message struct {
@@ -553,7 +553,6 @@ func (c *Client) connect(ctx context.Context, connID int, wg *sync.WaitGroup) {
 			}
 		}
 	}
-
 	conn, _, err := c.dialer.DialContext(ctx, u.String(), headers)
 	if err != nil {
 
@@ -734,7 +733,7 @@ func initConfig() Config {
 	viper.SetDefault("connections", 1)
 	viper.SetDefault("timeout", 10*time.Second)
 	viper.SetDefault("read-timeout", 60*time.Second)
-	viper.SetDefault("headers", []string{})
+	viper.SetDefault("header", []string{})
 
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
