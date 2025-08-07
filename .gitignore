@@ -18,6 +18,5 @@
 go.work
 
 # Built executables
-ws-test-service
 **/ws-server
 **/ws-client
